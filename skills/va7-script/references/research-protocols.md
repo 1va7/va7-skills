@@ -382,7 +382,7 @@ versions = list_records("<版本追踪表 id>")  # 版本追踪表
 
 ## Anti-pattern
 
-❌ "我已经读过 SKILL.md 里的 va7-style.md 了, 不需要再读 Bitable" — static reference 是历史快照, Bitable 是 live 数据。
+❌ "我已经读过静态风格参考了, 不需要再读 Bitable" — 静态参考是历史快照, Bitable 是 live 数据。
 
 ❌ "成品表只有 6 条, 我扫一眼就行" — 必须 systematic 提取 (受众 tech 天花板 / Hook 模板 / anatomy / 类比层级 / 数据表达模式 / 落款模板 / 传播表现 — 7 项), 不是浏览。
 
