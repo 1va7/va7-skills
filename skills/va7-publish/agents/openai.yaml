@@ -1,0 +1,3 @@
+display_name: 灵感库发布物料
+short_description: 为 VA7 灵感库视频准备并同步标题、正文和 Hashtag。
+default_prompt: 根据封面标题和口播终稿，为灵感库待发布内容生成文字标题、正文和 Hashtag，并在我审核后同步到飞书 Base。

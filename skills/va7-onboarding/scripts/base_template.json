@@ -1,0 +1,119 @@
+{
+  "tables": [
+    {
+      "key": "materials",
+      "name": "原始素材库",
+      "primary": "素材标题",
+      "fields": [
+        {"type": "text", "name": "素材标题"},
+        {"type": "select", "name": "类型", "options": [{"name": "会议洞察"}, {"name": "外部内容"}, {"name": "口述"}]},
+        {"type": "text", "name": "来源链接", "style": {"type": "url"}},
+        {"type": "text", "name": "内容摘要"},
+        {"type": "text", "name": "金句"},
+        {"type": "datetime", "name": "添加日期", "style": {"format": "yyyy/MM/dd"}},
+        {"type": "select", "name": "粗筛优先级", "options": [{"name": "高"}, {"name": "中"}, {"name": "低"}, {"name": "不建议处理"}]},
+        {"type": "text", "name": "粗筛理由"},
+        {"type": "select", "name": "状态", "options": [{"name": "未拆解"}, {"name": "已拆解"}, {"name": "已用完"}]},
+        {"type": "select", "name": "标签", "multiple": true, "options": []},
+        {"type": "text", "name": "备注"}
+      ],
+      "link_fields": [
+        {"name": "关联选题", "target_key": "topics", "bidirectional": true}
+      ]
+    },
+    {
+      "key": "topics",
+      "name": "选题库",
+      "primary": "选题标题",
+      "fields": [
+        {"type": "text", "name": "选题标题"},
+        {"type": "text", "name": "选题角度"},
+        {"type": "text", "name": "人性钩子"},
+        {"type": "select", "name": "认知密度", "options": [{"name": "高"}, {"name": "中高"}, {"name": "中"}, {"name": "低"}]},
+        {"type": "select", "name": "潜力等级", "options": [{"name": "高潜力"}, {"name": "中等潜力"}, {"name": "素材向"}]},
+        {"type": "text", "name": "口播草稿"},
+        {"type": "text", "name": "口播终稿"},
+        {"type": "text", "name": "视频正文"},
+        {"type": "text", "name": "文字标题"},
+        {"type": "text", "name": "Hashtag"},
+        {"type": "select", "name": "目标平台", "multiple": true, "options": [{"name": "小红书"}, {"name": "公众号"}, {"name": "视频号"}, {"name": "抖音"}]},
+        {"type": "datetime", "name": "创建日期", "style": {"format": "yyyy/MM/dd"}},
+        {"type": "checkbox", "name": "待做"},
+        {"type": "select", "name": "标签", "multiple": true, "options": []},
+        {"type": "text", "name": "备注"}
+      ],
+      "link_fields": [
+        {"name": "来源素材", "target_key": "materials", "bidirectional": true},
+        {"name": "关联内容排期", "target_key": "schedules", "bidirectional": true}
+      ]
+    },
+    {
+      "key": "schedules",
+      "name": "内容生产排期",
+      "primary": "内容标题",
+      "fields": [
+        {"type": "text", "name": "内容标题"},
+        {"type": "text", "name": "视频标题"},
+        {"type": "text", "name": "公众号标题"},
+        {"type": "text", "name": "封面标题"},
+        {"type": "text", "name": "公众号摘要"},
+        {"type": "text", "name": "视频文案介绍"},
+        {"type": "text", "name": "公众号排版稿"},
+        {"type": "datetime", "name": "稿子完成日", "style": {"format": "yyyy/MM/dd"}},
+        {"type": "datetime", "name": "拍摄剪辑日", "style": {"format": "yyyy/MM/dd"}},
+        {"type": "datetime", "name": "主发布日期", "style": {"format": "yyyy/MM/dd"}},
+        {"type": "text", "name": "备注"},
+        {"type": "attachment", "name": "公众号封面图"},
+        {"type": "attachment", "name": "竖版3:4封面"},
+        {"type": "attachment", "name": "横版4:3封面"},
+        {"type": "attachment", "name": "横版16:9封面"}
+      ],
+      "link_fields": [
+        {"name": "关联选题", "target_key": "topics", "bidirectional": true},
+        {"name": "平台发布记录", "target_key": "finished", "bidirectional": true}
+      ]
+    },
+    {
+      "key": "finished",
+      "name": "成品内容",
+      "primary": "标题",
+      "fields": [
+        {"type": "text", "name": "标题"},
+        {"type": "auto_number", "name": "ID"},
+        {"type": "select", "name": "平台", "options": [{"name": "小红书"}, {"name": "公众号"}, {"name": "视频号"}, {"name": "抖音"}]},
+        {"type": "select", "name": "状态", "options": [{"name": "草稿"}, {"name": "终稿"}, {"name": "已发布"}]},
+        {"type": "datetime", "name": "发布日期", "style": {"format": "yyyy/MM/dd"}},
+        {"type": "text", "name": "链接", "style": {"type": "url"}},
+        {"type": "text", "name": "正文描述"},
+        {"type": "text", "name": "口播稿全文"},
+        {"type": "text", "name": "Hashtag"},
+        {"type": "text", "name": "IP属地"},
+        {"type": "number", "name": "视频时长(秒)"},
+        {"type": "number", "name": "点赞"},
+        {"type": "number", "name": "收藏"},
+        {"type": "number", "name": "评论"},
+        {"type": "number", "name": "分享"},
+        {"type": "attachment", "name": "封面图"},
+        {"type": "text", "name": "封面图URL"},
+        {"type": "text", "name": "备注"}
+      ],
+      "link_fields": [
+        {"name": "关联内容排期", "target_key": "schedules", "bidirectional": true}
+      ]
+    },
+    {
+      "key": "writing_runs",
+      "name": "写作复盘任务",
+      "primary": "任务标题",
+      "fields": [
+        {"type": "text", "name": "任务标题"},
+        {"type": "select", "name": "状态", "options": [{"name": "待复盘"}, {"name": "复盘中"}, {"name": "已完成"}]},
+        {"type": "datetime", "name": "创建时间", "style": {"format": "yyyy/MM/dd HH:mm"}},
+        {"type": "text", "name": "终稿位置"},
+        {"type": "text", "name": "复盘产出链接", "style": {"type": "url"}},
+        {"type": "text", "name": "备注"}
+      ],
+      "link_fields": []
+    }
+  ]
+}
