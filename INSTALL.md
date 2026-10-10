@@ -35,7 +35,7 @@ onboarding 会产出用户自己的 config.json，把它的路径导出：
 export VA7_USER_CONFIG=<用户目录>/config.json
 ```
 
-不设置这个变量，脚本会默认读写 VA7 本人的生产库——朋友的环境里这是错的，写操作会失败，所以装完先设好再跑任何东西。
+注意 export 只对当前会话生效。装完把这一行追加进用户的 shell 配置（~/.zshrc 或 ~/.bashrc），否则下次会话脚本会拒跑。
 
 ## 更新
 
