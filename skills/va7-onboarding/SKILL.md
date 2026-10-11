@@ -99,3 +99,7 @@ lark-cli minutes +search --as user --owner-ids me --page-size 5 --json
 ## 中断与续跑
 
 每一步落盘后可续跑：重新执行时先读用户配置，跳过已完成的步骤，从第一个未完成步骤继续。
+
+## 权限一次性拿全（va7-briefing 依赖）
+
+初始化就要确认应用具备：扫用户全部妙记（minutes 读权限）、建群（im:chat）、建多维表格（bitable）、建文档。这些是每日早报和建库的地基，缺哪个 scope 当场补，不要等日运行时才暴露。早报功能开通时顺手建"XX 内容早报"群（bot + 用户本人），chat_id 登记进 config.json（briefing_chat 字段）。
