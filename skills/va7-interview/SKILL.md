@@ -35,6 +35,7 @@ Use this skill before writing when:
 - the topic could become multiple different videos;
 - the idea needs personal examples, numbers, stories, or operating details;
 - the draft would otherwise be based mainly on external research.
+- materials look complete (transcripts, drafts, style profile), but the IP was present at the source events and their current judgment on the core open questions is missing — run a stance interview, or ask the IP to dictate those segments.
 
 Reuse the current conversation, an approved outline, an existing user draft or a confirmed brief when they already supply the needed material. Missing serialization is not missing user knowledge: restore the brief and its confirmation source without asking the user to repeat it. Respect an explicit request to skip interview or directly draft, while keeping factual gaps visible. An outline-only or cleanup request should not automatically trigger a full interview.
 
@@ -94,6 +95,7 @@ Interview for original thought. Ask one focused question per turn unless the use
 Minimum dimensions:
 
 - **Real stance**: what does the user actually believe, not what sounds punchiest?
+- **Time-axed stance**: for each argument layer, three answers — what to do now, what holds long-term, what is still unresolved. For layers the IP personally lived through, prefer asking them to dictate the segment and edit it, instead of reconstructing a stance from transcripts.
 - **Personal evidence**: what did the user personally see, build, debug, spend, decide, or change?
 - **Audience**: who should this video help or challenge?
 - **Tension**: what common belief, behavior, or workflow is wrong or incomplete?
