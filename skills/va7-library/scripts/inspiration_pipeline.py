@@ -26,6 +26,7 @@ import shlex
 import shutil
 import subprocess
 import sys
+import tempfile
 import time
 import urllib.error
 import urllib.parse
@@ -49,11 +50,12 @@ def _apply_user_base_config() -> None:
     """Every user's library lives in their own Bitable, recorded in the
     config.json written by va7-onboarding. This pipeline writes records, so
     it refuses to run without that config."""
-    config_path = os.environ.get("VA7_USER_CONFIG")
+    sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "va7-pipeline" / "scripts"))
+    from va7config import load_config  # VA7_USER_CONFIG, else deployment va7-config
+    data, config_path = load_config()
     if not config_path:
-        raise SystemExit("VA7_USER_CONFIG 未设置。先跑 va7-onboarding，再 export VA7_USER_CONFIG=<用户目录>/config.json")
+        raise SystemExit("找不到 config：先跑 va7-onboarding，再 export VA7_USER_CONFIG=<用户目录>/config.json（或部署 va7-config/default.json）")
     global BASE_TOKEN, BASE_URL, MATERIAL_TABLE, TOPIC_TABLE, FINISHED_CONTENT_TABLE, VIRAL_TOPIC_TABLE, PRODUCTION_SCHEDULE_TABLE
-    data = json.loads(Path(config_path).expanduser().read_text(encoding="utf-8"))
     base = data.get("base", {})
     BASE_TOKEN = base.get("base_token")
     BASE_URL = base.get("url")
@@ -245,8 +247,8 @@ FINISHED_HISTORY_RECOVERY_RULES = [
 ]
 
 TIKHUB_CONFIG_CANDIDATES = [
-    Path("/Users/va7/Downloads/tikhub-xiaohongshu/config.json"),
-    Path("/Users/va7/Downloads/content-skills-temp/tikhub-xiaohongshu/config.json"),
+    Path("~/Downloads/tikhub-xiaohongshu/config.json").expanduser(),
+    Path("~/Downloads/content-skills-temp/tikhub-xiaohongshu/config.json").expanduser(),
 ]
 TIKHUB_BASE_URL = "https://api.tikhub.io"
 TIKHUB_NOTE_ENDPOINTS = [
@@ -450,7 +452,8 @@ def extract_json(stdout: str) -> Any:
     if start == -1:
         raise PipelineError(f"Could not locate JSON in output:\n{text[:1000]}")
     try:
-        return json.loads(text[start:])
+        # raw_decode: newer lark-cli may print notices after the JSON body
+        return json.JSONDecoder().raw_decode(text[start:])[0]
     except json.JSONDecodeError as exc:
         raise PipelineError(f"Could not parse JSON output:\n{text[:2000]}") from exc
 
@@ -464,14 +467,19 @@ def run_cmd(
     input_text: str | None = None,
 ) -> subprocess.CompletedProcess[str]:
     shown = cmd if isinstance(cmd, str) else " ".join(shlex.quote(x) for x in cmd)
-    proc = subprocess.run(
-        cmd,
-        shell=shell,
-        text=True,
-        input=input_text,
-        capture_output=True,
-        timeout=timeout,
-    )
+    # stdout via temp file: a proxied lark-cli truncates piped stdout at ~8KB
+    with tempfile.TemporaryFile() as out:
+        proc = subprocess.run(
+            cmd,
+            shell=shell,
+            text=True,
+            input=input_text,
+            stdout=out,
+            stderr=subprocess.PIPE,
+            timeout=timeout,
+        )
+        out.seek(0)
+        proc.stdout = out.read().decode("utf-8", errors="replace")
     if check and proc.returncode != 0:
         raise PipelineError(
             f"Command failed ({proc.returncode}): {shown}\n"

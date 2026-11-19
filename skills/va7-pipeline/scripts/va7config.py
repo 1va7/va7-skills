@@ -57,6 +57,23 @@ def style_rules_path(path: str | Path | None = None) -> Path | None:
     return local if local.exists() else None
 
 
+def run_capture(cmd, *, timeout=None, input_text=None, shell=False):
+    """subprocess.run with stdout captured through a temp file, not a pipe.
+
+    In Antry sandboxes lark-cli is proxied, and its stdout gets cut at ~8KB when
+    it is a pipe (capture_output=True); writing to a file returns everything.
+    """
+    import subprocess
+    import tempfile
+
+    with tempfile.TemporaryFile() as out:
+        p = subprocess.run(cmd, shell=shell, stdout=out, stderr=subprocess.PIPE, input=input_text,
+                           text=True, timeout=timeout, check=False)
+        out.seek(0)
+        p.stdout = out.read().decode("utf-8", errors="replace")
+    return p
+
+
 def base_config(path: str | Path | None = None) -> tuple[str | None, dict[str, str]]:
     cfg, _ = load_config(path)
     base = cfg.get("base", {})

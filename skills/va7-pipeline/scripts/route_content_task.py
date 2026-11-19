@@ -23,7 +23,7 @@ from writing_intent import active_signal_matches, decide_writing_request, instru
 # (VA7_USER_CONFIG, else the deployment default; see va7config.py). Without
 # any config the router skips live Base search instead of touching data.
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from va7config import base_config  # noqa: E402
+from va7config import base_config, run_capture  # noqa: E402
 
 BASE_TOKEN, TABLES = base_config()
 
@@ -78,7 +78,7 @@ def keyword_variants(keyword: str) -> list[str]:
 
 
 def run_json(cmd: list[str], timeout: int = 20) -> dict[str, Any]:
-    proc = subprocess.run(cmd, text=True, capture_output=True, timeout=timeout, check=False)
+    proc = run_capture(cmd, timeout=timeout)
     if proc.returncode != 0:
         return {"ok": False, "cmd": cmd, "returncode": proc.returncode, "stderr": proc.stderr.strip(), "stdout": proc.stdout[:2000]}
     try:
