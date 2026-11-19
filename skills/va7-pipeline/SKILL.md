@@ -27,7 +27,12 @@ where `<repo>` is the local clone of `1va7/va7-skills` (default `~/.claude/skill
 
 ## Multi-User Config
 
-Scripts in this skillset default to VA7's own production base. For any other user, set `VA7_USER_CONFIG` to their `config.json` (created by va7-onboarding) before running scripts — all reads/writes then go to that user's own base. Non-VA7 usage without this variable is a bug: stop and run va7-onboarding first.
+Config lookup (shared by every script, see `scripts/va7config.py`):
+
+1. `VA7_USER_CONFIG` env → that user's `config.json` (created by va7-onboarding).
+2. Otherwise `va7-pipeline/config/default.json` — the deployment default that ships alongside the skills, so every chat and sandbox reads the same base token, table ids and voice profile path. In VA7's deployment it points to VA7's production base. It is not in the public repo; copy `config/default.example.json` to set one up.
+
+Anywhere a SKILL.md says `<… 见 config.json>`, read the value from this config: `python3 <skills_root>/va7-pipeline/scripts/va7config.py` prints the resolved base token, tables and voice profile path. Relative paths in the config resolve against the config file's directory. Non-VA7 users must set `VA7_USER_CONFIG` (or replace default.json) before running scripts; otherwise they write into the default base.
 
 ## Core Rule
 

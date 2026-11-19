@@ -19,19 +19,13 @@ from validate_content_brief import load_brief  # noqa: E402
 from writing_intent import active_signal_matches, decide_writing_request, instruction_text  # noqa: E402
 
 
-# No default base: every user's library lives in their own Bitable, recorded
-# in the config.json written by va7-onboarding. Without VA7_USER_CONFIG the
-# router skips live Base search instead of touching anyone's data.
-def _load_user_base_config() -> tuple[str | None, dict[str, str]]:
-    config_path = os.environ.get("VA7_USER_CONFIG")
-    if not config_path:
-        return None, {}
-    data = json.loads(Path(config_path).expanduser().read_text(encoding="utf-8"))
-    base = data.get("base", {})
-    return base.get("base_token"), dict(base.get("tables", {}))
+# Each user's library lives in their own Bitable, recorded in config.json
+# (VA7_USER_CONFIG, else the deployment default; see va7config.py). Without
+# any config the router skips live Base search instead of touching data.
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from va7config import base_config  # noqa: E402
 
-
-BASE_TOKEN, TABLES = _load_user_base_config()
+BASE_TOKEN, TABLES = base_config()
 
 RAW_TOPIC_PATTERNS = [
     r"我有个?灵感",
@@ -97,7 +91,7 @@ def run_json(cmd: list[str], timeout: int = 20) -> dict[str, Any]:
 
 def search_table(keyword: str, table_id: str, search_fields: list[str], select_fields: list[str], limit: int = 5) -> dict[str, Any]:
     if not BASE_TOKEN:
-        return {"ok": False, "skipped": "VA7_USER_CONFIG not set; base search disabled"}
+        return {"ok": False, "skipped": "no va7 config (VA7_USER_CONFIG / config/default.json); base search disabled"}
     if not keyword:
         return {"ok": False, "skipped": "empty keyword"}
     cmd = [

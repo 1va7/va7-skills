@@ -11,24 +11,26 @@ from pathlib import Path
 from typing import Any
 
 
-# No default base: this script writes records, so it refuses to run without
-# the invoking user's config.json (written by va7-onboarding).
+# This script writes records, so it refuses to run without a config.json
+# (VA7_USER_CONFIG, else the deployment default; see va7-pipeline/scripts/va7config.py).
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "va7-pipeline" / "scripts"))
+from va7config import base_config, config_path  # noqa: E402
+
+
 def _load_user_base_config() -> tuple[str, dict[str, str]]:
-    config_path = os.environ.get("VA7_USER_CONFIG")
-    if not config_path:
-        raise SystemExit("VA7_USER_CONFIG 未设置。先跑 va7-onboarding，再 export VA7_USER_CONFIG=<用户目录>/config.json")
-    data = json.loads(Path(config_path).expanduser().read_text(encoding="utf-8"))
-    base = data.get("base", {})
-    token = base.get("base_token")
+    if not config_path():
+        raise SystemExit("找不到 config：先跑 va7-onboarding，再 export VA7_USER_CONFIG=<用户目录>/config.json（或部署 va7-pipeline/config/default.json）")
+    token, tables = base_config()
     if not token:
         raise SystemExit("config.json 缺 base.base_token，请重跑 va7-onboarding")
-    return token, dict(base.get("tables", {}))
+    return token, tables
 
 
 BASE_TOKEN, _TABLES = _load_user_base_config()
 TOPIC_TABLE = _TABLES["topics"]
 SCHEDULE_TABLE = _TABLES["schedules"]
 FINISHED_TABLE = _TABLES["finished"]
+OPENING_PREFIX = "换章句："
 TIME_RE = re.compile(r"^(?:(\d{1,2}):)?([0-5]?\d):([0-5]\d)$")
 
 
@@ -143,12 +145,14 @@ def get_finished_by_schedule(schedule_ids: list[str]) -> dict[str, Record]:
         "选题类型",
         "--field-id",
         "关联内容排期",
+        "--field-id",
+        "内容生产排期",
         "--limit",
         "200",
     ])
     by_schedule: dict[str, Record] = {}
     for record in map_records(payload):
-        for sid in record_ids(record.fields.get("关联内容排期")):
+        for sid in record_ids(record.fields.get("关联内容排期") or record.fields.get("内容生产排期")):
             if sid in schedule_ids:
                 by_schedule[sid] = record
     return by_schedule
@@ -184,6 +188,15 @@ def validate_chapter_text(text: str) -> str:
     blocks = [block.strip() for block in text.strip().split("\n\n") if block.strip()]
     for block in blocks:
         lines = [line.strip() for line in block.splitlines() if line.strip()]
+        if len(lines) == 2 and lines[1].startswith(OPENING_PREFIX):
+            title_line, opening_line = lines
+            if not (title_line.startswith("【") and title_line.endswith("】")):
+                raise SystemExit(f"Invalid chapter title line: {title_line}")
+            if len(title_line[1:-1]) > 14:
+                raise SystemExit(f"Chapter title too long ({len(title_line[1:-1])} > 14): {title_line[1:-1]}")
+            if not opening_line[len(OPENING_PREFIX):].strip():
+                raise SystemExit(f"Chapter opening line is empty: {title_line}")
+            continue
         if len(lines) != 3:
             raise SystemExit(f"Invalid chapter block; expected 3 lines, got {len(lines)}:\n{block}")
         title_line, range_line, content_line = lines
@@ -215,6 +228,18 @@ def format_chapters(value: Any, *, max_chapters: int | None = None) -> str | Non
         raise SystemExit("chapters must be a formatted string or a list of chapter objects")
     if max_chapters is not None and len(value) > max_chapters:
         raise SystemExit(f"Too many chapters ({len(value)} > {max_chapters})")
+    if all(isinstance(i, dict) and not i.get("start") and not i.get("end") for i in value):
+        # 文字版（默认）：章节标题 + 换章句（该章第一句原话），不带时间，不依赖 SRT
+        text_blocks: list[str] = []
+        for index, item in enumerate(value, start=1):
+            title = str(item.get("title") or "").strip()
+            opening = str(item.get("opening_line") or "").strip()
+            if not title or not opening:
+                raise SystemExit(f"Chapter {index} requires title and opening_line (该章第一句原话)")
+            if len(title) > 14:
+                raise SystemExit(f"Chapter title too long ({len(title)} > 14): {title}")
+            text_blocks.append(f"【{title}】\n{OPENING_PREFIX}{opening}")
+        return validate_chapter_text("\n\n".join(text_blocks))
     blocks: list[str] = []
     last_end = -1
     for index, item in enumerate(value, start=1):
