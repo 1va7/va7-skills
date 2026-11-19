@@ -18,6 +18,9 @@
 | 选题 | va7-interview | 立场、受众、证据没聊清楚之前不开写 |
 | 写稿 | va7-script | 口播论证大纲、全文写作、口述整理 |
 | 入库 | va7-library | 素材抓取、转写、校验、写进灵感库 |
+| 剪辑 | va7-monologue-video-editor | 口播一镜到底视频的剪辑、字幕、响度、QA（依赖 ffmpeg；元数据保留部分仅 macOS） |
+| 封面 | va7-video-cover-maker + va7-cover-tools | 封面文案、构图、出图、QA、开头花字；前者是流程和规则，后者是脚本 |
+| 品牌 | va7-xhs-brand-deck | 小红书创作者的品牌合作 deck |
 | 发布 | va7-publish | 文字标题、正文（≤200 字）、Hashtag、章节（标题 + 换章句，有 SRT 时补时间）写回灵感库 |
 
 ## 几条规矩
@@ -49,4 +52,5 @@
 ## TODO
 
 - va7-script 内置的风格参考目前是 VA7 本人沉淀，新用户先当脚手架用，攒够自己的成品稿后重校准替换。
-- 视频剪辑（va7-monologue-video-editor）和封面（va7-video-cover-maker）还没多用户化，暂不进包。
+- 剪辑、封面里的风格规则和历史样本是 VA7 本人的，新用户先当脚手架用。
+- 封面的字体和历史样本图不在仓库目录里：`va7-cover-tools/scripts/cover_assets.py ensure` 首次使用时从 Noto 官方仓库和本仓库 Release `cover-assets-v1` 下载并按 sha256 校验。

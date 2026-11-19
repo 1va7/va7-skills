@@ -1,0 +1,6 @@
+interface:
+  display_name: "VA7 Video Cover Maker"
+  short_description: "Make VA7口播封面 into source-folder cover outputs."
+  default_prompt: "Use $va7-video-cover-maker to create 3:4, 4:3, and 16:9 cover images from this VA7口播 video."
+policy:
+  allow_implicit_invocation: true

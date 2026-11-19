@@ -14,7 +14,7 @@ from typing import Any
 # This script writes records, so it refuses to run without a config.json
 # (VA7_USER_CONFIG, else the deployment default; see va7-pipeline/scripts/va7config.py).
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "va7-pipeline" / "scripts"))
-from va7config import base_config, config_path  # noqa: E402
+from va7config import base_config, config_path, run_capture  # noqa: E402
 
 
 def _load_user_base_config() -> tuple[str, dict[str, str]]:
@@ -44,7 +44,7 @@ def run_lark(args: list[str], *, dry_run: bool = False) -> dict[str, Any]:
     cmd = ["lark-cli", *args, "--format", "json"]
     if dry_run and "+record-" in " ".join(args):
         cmd.append("--dry-run")
-    proc = subprocess.run(cmd, text=True, capture_output=True)
+    proc = run_capture(cmd)
     if proc.returncode != 0:
         raise SystemExit(f"Command failed:\n{' '.join(cmd)}\nSTDOUT:\n{proc.stdout}\nSTDERR:\n{proc.stderr}")
     try:

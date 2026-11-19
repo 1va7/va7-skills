@@ -1,0 +1,8 @@
+interface:
+  display_name: "VA7 XHS Brand Deck"
+  short_description: "Build Xiaohongshu brand decks from creator data"
+  brand_color: "#DC580E"
+  default_prompt: "Use $va7-xhs-brand-deck to build or refresh a brand-facing HTML deck for a technology Xiaohongshu account."
+
+policy:
+  allow_implicit_invocation: true

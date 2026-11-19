@@ -10,6 +10,7 @@ link 字段在两张表都建好之后统一补建（因为互相引用）。
 import argparse
 import json
 import subprocess
+import tempfile
 import sys
 import os
 import datetime
@@ -22,7 +23,11 @@ def run_cli(args, check=True):
     cmd = ["lark-cli"] + list(args)
     if "--json" not in cmd:
         cmd += ["--json"]
-    p = subprocess.run(cmd, capture_output=True, text=True)
+    # stdout via temp file: a proxied lark-cli truncates piped stdout at ~8KB
+    with tempfile.TemporaryFile() as out:
+        p = subprocess.run(cmd, stdout=out, stderr=subprocess.PIPE, text=True)
+        out.seek(0)
+        p.stdout = out.read().decode("utf-8", errors="replace")
     out = p.stdout.strip()
     try:
         d = json.loads(out)
