@@ -18,7 +18,7 @@
 | 选题 | va7-interview | 立场、受众、证据没聊清楚之前不开写 |
 | 写稿 | va7-script | 口播论证大纲、全文写作、口述整理 |
 | 入库 | va7-library | 素材抓取、转写、校验、写进灵感库 |
-| 发布 | va7-publish | 文字标题、正文、Hashtag、章节时间戳写回灵感库 |
+| 发布 | va7-publish | 文字标题、正文（≤200 字）、Hashtag、章节（标题 + 换章句，有 SRT 时补时间）写回灵感库 |
 
 ## 几条规矩
 
@@ -33,10 +33,14 @@
 ## 新用户接入
 
 1. 跑 va7-onboarding，四步走完，产出你的用户目录和 config.json。
-2. `export VA7_USER_CONFIG=<用户目录>/config.json`
+2. 二选一：`export VA7_USER_CONFIG=<用户目录>/config.json`；或者做成部署级全局配置，在 skills 目录旁放一个私有的 `va7-config/default.json`（格式见 `va7-pipeline/config/default.example.json`，文风档案和 style_rules.json 可放同目录，路径写相对路径），这样所有会话、所有沙箱读到同一份。
 3. 之后所有请求都从 va7-pipeline 进。
 
-注意：不设置 VA7_USER_CONFIG 时，脚本默认读写 VA7 本人的生产库。所以新用户必须先跑完 onboarding 再用，顺序不能反。
+配置查找顺序：`VA7_USER_CONFIG` → `va7-config/default.json` → `va7-pipeline/config/default.json`。`python3 skills/va7-pipeline/scripts/va7config.py` 打印实际读到的 base、表和文风档案路径。都没有时，只读脚本跳过灵感库检索，写入脚本直接报错。
+
+## 闸门（v0.6）
+
+写稿和发布不再靠 agent 记得规则，改成脚本放行：每个环节先预检（没读完 skill、缺输入就停），过程中的人确认只认人的原话和消息 id，交付前机器项全过、人逐项审过才发校验码。共用库 `va7-pipeline/scripts/gatelib.py`；写稿闸门 `script_gate.py` 和文风机检 `style_check.py` 也放在 `va7-pipeline/scripts/`，发布闸门是 `va7-publish/scripts/publish_gate.py`。文风机检规则 style_rules.json 属于个人文风，不在仓库里，由 config 的 `voice_profile.style_rules` 指过去。
 
 ## OTA
 

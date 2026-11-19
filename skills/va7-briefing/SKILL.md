@@ -11,7 +11,12 @@ description: 每日内容早报。凌晨定时提炼用户昨天全部会议纪�
 
 **1. 凌晨定时提炼（无人值守）**
 
-- 拉用户昨天（本地时区）全部妙记：`lark-cli minutes +search --as user --owner-ids me`，按日期过滤后逐场拉转写稿
+- 拉用户昨天（北京时间）**全部**妙记，四个渠道缺一不可（2026-10-14 修正：只跑 owner 检索会漏掉大量同事当 host 录制的会议）：
+  1. `lark-cli minutes +search --as user --owner-ids me`（自己录的）
+  2. `lark-cli minutes +search --as user --participant-ids me`（别人录、自己是结构化参与者的）
+  3. IM 消息扫描：`lark-cli im +messages-search --as user`，关键词 "minutes"、"会议录制已完成"、"妙记"——同事录完分享到群/私聊的卡片、用户自己贴的妙记链接都在这里，这是 participant 检索之外最大的补充源
+  4. token 归一化（24 位完整 token，丢弃消息预览截断的前缀变体）+ 四路并集 + 与灵感库来源链接差集
+- 可把这四路固化成一个脚本（例：`gather_minutes.py`，VA7 部署放在 `~/va7-jobs/`）（--start/--end 北京时间窗口，--diff-library --enrich 直接出"库外场次+详情"）；无查看权限的场次单独列"权限缺口"清单提示用户找 host 开通
 - 每场提炼：核心 thesis（一句话）、关键要点（2-4 条）、值得立题的判断（明确标"无"如果只是过程性讨论）
 - 查重：对每个候选方向，用关键词搜用户灵感库的素材表和选题表；与已有内容实质重复的丢弃或标注"与已有 X 重叠"
 - 产出早报：编号列出候选选题方向，每条一句话 thesis + 一行出处（哪场会、谁说的）+ 查重结论；没有值得入库的也明说"昨天 N 场会，无可立题内容"

@@ -1,0 +1,26 @@
+{
+  "open_id": "ou_xxx",
+  "display_name": "",
+  "lark_auth": "ok",
+  "base": {
+    "base_token": "",
+    "tables": {
+      "materials": "",
+      "topics": "",
+      "schedules": "",
+      "finished": "",
+      "viral_topics": "",
+      "version_tracking": "",
+      "writing_samples": "",
+      "writing_runs": ""
+    },
+    "url": ""
+  },
+  "minutes": "ok",
+  "voice_profile": {
+    "path": "<你的 writing-style-profile.md 路径，相对本文件或绝对路径>",
+    "calibrated_at": "",
+    "corpus_sources": [],
+    "style_rules": "<文风机检规则 style_rules.json 路径，可留空>"
+  }
+}

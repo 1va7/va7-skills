@@ -74,24 +74,15 @@ Read these fields at minimum: `选题标题`, `选题角度`, `待做`, `发布�
 - relationship to cover title
 - one short rationale
 
-7. Draft chapters only when timestamp evidence exists. Use actual timestamps from the edited video, subtitle SRT, ASR JSON, or a user-provided timing list. If no timestamp source is available, ask the user for it before drafting chapters.
-
-Chapter output for user review must be plain text in this exact block format:
+7. Draft chapters. **默认交文字版，每次都出，不需要时间，不依赖 SRT**：5 个以内的「章节标题（≤14 字）+ 换章句（该章第一句原话，必须能在口播终稿里逐字找到）」，格式：
 
 ```text
 【章节标题】
-00:01-00:56
-章节内容
+换章句：该章第一句原话
 ```
 
-Rules:
-
-- `章节标题` must be <= 14 characters. Chinese characters count as one character.
-- `章节内容` must be <= 20 characters.
-- Chapter count must be <= the video's duration in minutes, rounded up. Example: 2m30s allows at most 3 chapters.
-- Use actual ranges, normally starting at the first retained spoken second, not necessarily `00:00`.
-- Chapters must be sequential and non-overlapping.
-- Do not invent timestamps from the written script alone.
+   - 章节顺序必须与口播终稿中的出现顺序一致；成片有删改时标注「需对成片核对」。
+   - **时间版是可选项**：只有已有剪辑环节产出的 SRT / ASR JSON / 用户给的时间点时，才补成「【标题】/起止时间/章节内容(≤20 字)」三行块，沿用原格式和规则（数量 ≤ 视频分钟数向上取整，顺序不重叠，不凭稿子编时间）。SRT 来自剪辑环节（`va7-monologue-video-editor` 的 `subtitles/` 目录），不是发布物料的前置条件。
 
 8. After approval, write a JSON parameter file shaped like:
 
@@ -102,14 +93,11 @@ Rules:
     "title": "approved title",
     "body": "approved body copy with #话题[话题]# tags",
     "hashtag": "#AI #Agent #...",
+    "title_alternatives": ["approved title", "alt 2", "alt 3"],
     "chapters": [
-      {
-        "title": "章节标题",
-        "start": "00:01",
-        "end": "00:56",
-        "content": "章节内容"
-      }
+      {"title": "章节标题", "opening_line": "该章第一句原话"}
     ],
+    "chapters_missing_reason": "仅当没有章节时填写",
     "video_duration_seconds": 150.0
   }
 ]
@@ -157,6 +145,7 @@ Body copy requirements:
 - Preserve the core tension or data structure from the script.
 - Use 4-6 in-body topic tags for 小红书-style copy.
 - Keep it truthful to the script; do not introduce unsupported claims.
+- 正文控制在 200 字以内（不含话题标签与空白；VA7 2026-10-14 定版）。写法像论文摘要：开头一句 hook 交代为什么做这条内容，中间每段一个点、要点句领起加凝练短词排比推进，结尾一句判断收束、至多一句互动邀请。正文不加 emoji，破折号尽量不用（VA7 真实发布文案规律，语料提炼）。
 
 Hashtag requirements:
 
@@ -169,7 +158,7 @@ Chapter requirements:
 
 - Prefer 3-6 chapters for normal short videos; fewer is fine for short/simple stories.
 - Enforce `chapter_count <= ceil(video_duration_seconds / 60)`.
-- Title describes the section's job, not just a noun.
+- Title naming follows `references/chapter-format.md`「章节命名原则」（4-6 字，写这章交给观众的对象或判断，用稿子里的词）。
 - Content line summarizes what happens in that section.
 - Use `references/chapter-format.md` for detailed examples and timestamp-source handling.
 
@@ -181,3 +170,25 @@ Chapter requirements:
 - Keep write operations script-driven and parameterized.
 - If chapter timestamps are unavailable, ask the user for SRT/ASR JSON/video timing before generating chapters.
 - If schema has drifted, stop and inspect live fields before writing.
+
+## 闸门（2026-11-16 定）
+
+脚本：`scripts/publish_gate.py`（共用 `../va7-pipeline/scripts/gatelib.py`）。
+
+1. 预检：`publish_gate.py preflight --script <口播终稿> --script-confirmed --cover-title <封面标题>`；封面没做必须用 `--no-cover-reason` 写明原因。
+2. 交付：`apply_publish_materials.py --apply` 之前先跑 `publish_gate.py deliver --materials <json>`。核对：标题备选 3-5 个且 title 是其一、正文 ≤200 字、Hashtag 5-8 个、章节 ≤5 个且每章换章句在终稿里逐字存在并按顺序、没有章节必须写原因。通过输出校验码，交付消息末尾必须带。
+3. 物料一次性交齐：标题备选、正文、Hashtag、章节（文字版）、封面标题备选（封面未做时）；缺哪样写明原因，不留空。
+
+## 物料交付顺序与封面文案（王诗梦 2026-11-16 定）
+
+出物料时按此顺序，一条消息交齐：
+
+1. **封面大小标题备选 ×5**：每套 = 大标题（黄字）+ 小标题（白字，3-5 个要点）。要点用稿子里的判断或机制，不加稿子没有的数字。
+2. **开头花字备选 ×3**：左上白字 2 行、右下黄字 2 行，每行 ≤7 字，用 `va7-video-cover-maker/scripts/huazi.py check` 检查，与封面标题不重复。
+3. **文字标题备选 ×5**。
+4. **正文**（≤200 字，带话题标签）。
+5. **Hashtag**（5-8 个）。
+6. **章节**（文字版，命名见 `references/chapter-format.md`）。
+7. 一次交齐，不简写。
+
+封面文案和花字人选定后，交给 va7-video-cover-maker 渲染；文字标题要与选定的封面大标题互补，不重复。

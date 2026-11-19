@@ -7,9 +7,27 @@ description: 将已明确的内容方向和素材整理成口播论证大纲，�
 
 为科技/创业/AI 领域创作者写口播视频文案。声音来自用户本人的 writing-style-profile（由 va7-voice-profile 生成），本 skill 提供论证结构、证据纪律和写作流程。
 
+## 强制流程（先读这一节，必须按序；每一步由 `../va7-pipeline/scripts/script_gate.py` 放行，不靠记忆；下文的 `script_gate.py`、`style_check.py` 都在 `va7-pipeline/scripts/`）
+
+脚本共用 `../va7-pipeline/scripts/gatelib.py`。本文件最后一行有读完标记，`preflight` 要求带上它，所以必须读到文件末尾。
+
+1. **预检** `script_gate.py preflight --skill-read-token <末行标记> --brief ... --gate-result ... --constraints ... --want outline|full`：查文风档案、brief、`pre_draft_gate` 结论、约束清单状态。任何一项缺，停下。
+2. **大纲是写全文的前提输入。** 按 `references/speaking-outlines.md` 出大纲，存成 `outline.json`（`{version, layers:[{id, label≤8字, judgment, anchor, source, must_include?, points:[{type: 观点|例子|数据|反方质疑, content, key_terms:[正文这层必须出现的词], source:{kind: 素材原话|推断|待补, ref, reason?}}], limitation, answers_limit_of(第二层起，等于上一层的 limitation), needed_by, breaks_without, sources:[{kind: 素材原话|口述|推断, ref, reason?}]}]}`），`script_gate.py outline --file outline.json --source <素材文件>` 登记。**登记时脚本就做结构自检，不通过不能进入人确认**，不留到写正文时：①**删层测试**：每层必须声明 `needed_by`（抽掉它，后面哪一层失去前提，只能指向更靠后的层或 `thesis`，最后一层必须是 `thesis`）和 `breaks_without`（抽掉后哪句论断失去前提，≥10 字），被依赖的两层文字要有共同词；没有层依赖它就是平铺。②**来源检查**：每层声明来源，「素材原话」必须在素材里逐字存在；每层恰一个出处且互不相同判为按材料攒的、不是按逻辑挖的；第二层起必须回答上一层声明的局限（`answers_limit_of` 与上一层 `limitation` 相同）。③**每层写明拟用的观点、例子、数据**（`points`）：每层至少一条观点，且至少一条例子或数据；素材原话必须在素材里逐字存在；**数据只能来自素材原话，没有就标「待补」让人补，不许推断、不许编数字**；每条带 `key_terms`，交付时脚本核对这些词真写进了这一层的段落。大纲展示给人时，每层按「观点／例子／数据／反方质疑」分条排版并标注来源（原稿／推断／待补），这是对正文展开方向的锁定。通过后**由人确认**后 `outline --confirm --by <人> --message-id <om_…> --quote <原话>`。确认记录必须是人的原话和消息 id，agent 不得自己填。没有已确认的大纲，hook 和全文都不放行。大纲主张或结构实质改变就递增版本、重新确认，旧版确认不能沿用。
+3. **3 个备选 hook** `script_gate.py hooks --candidates h.json`：正好 3 个，各标类型（痛点问句 / 近身经历 / 直接抛结论 / 案例冲突 / 具体问题 / 反共识 / ABC）、依据、来源（VA7原话 / 素材 / 推断），含数字必须给来源，至少覆盖 2 种类型。人选定后 `hooks --choose N`。痛点问句、近身经历、直接抛结论只是备选类型，不要求三句内完成。
+3.5. **hook + 大纲合并确认（写全文前必须单独发一条消息，不能带着成稿一起发）**：hook 选定后，`script_gate.py plan` 把「选定的 hook + 大纲各层判断」列出来，发给人再看一次，人确认后 `plan --confirm --by <人> --message-id <om_…> --quote <原话>`，才开始写全文。确认后又改了 hook 或大纲，要重新确认。
+**步骤 2、3、3.5 合并呈现（王诗梦 2026-11-16 定）**：每次发给人看的消息，选定（或候选）hook 与大纲各层都同时出现，不单发大纲、不单发 hook；人确认的是「hook + 大纲」这一个整体。
+3.6. **大纲深化 → 人确认 → 才写正文（王诗梦 2026-11-16 定）**：hook+大纲确认后，先不写正文。机侧把大纲深化成「逐段展开方案」单独发一条消息：每层列出这一层拟写几段、每段讲什么观点、用哪个例子（哪一句素材原话）、哪个数据（没有就标待补）、在哪里讲局限和怎么接下一层；沿用「A（开头）」「B（第一层：…）」的字母加括号排版。人逐段确认或改，确认后才写正文；人改了展开方案就按改后的写，不沿用旧的。
+4. **写全文：输入只有「已确认大纲 + 素材池」。** 素材（原稿、口述、转录）是证据来源，不是结构来源，不得以素材的顺序和分段当成稿结构。成稿每一层大纲对应一段，顺序与大纲一致，段首句记入 `mapping.json`（`[{layer_id, paragraph_first_sentence}]`）。以大纲该层的 judgment 和 anchor 为论证内容，素材补细节。
+5. **交付** `script_gate.py deliver --draft ... --counted-file ... --mapping mapping.json [--length-note ...] [--source 素材 --additions ... | --organize-only]`：核对大纲版本和确认记录、每层都有对应段落且顺序一致且含该层要求的词、hook 已选定且稿件以它开头、字数（常规 1800-2200，题材需要时 1000 或 3000 都可以，区间外用 `--length-note` 写一句原因）、无 markdown 符号和 bullet、统计字数的就是交付的这份、相对素材的新增（成稿 8 字片段超过 60% 直接来自素材时，须交 `--additions` 新增清单：机制 / 判别标准 / 边界条件 / 结构调整，锚点须在成稿里、不是抄素材、不少于 15 字；或用 `--organize-only` 明说仅整理并在交付说明里写明）。文风由 `va7-pipeline/scripts/style_check.py` 按 config 的 `voice_profile.style_rules`（档案第八节转写；VA7 部署在 `va7-config/voice/style_rules.json`）机械核对：句长（平均 28-48、单句不超 100 字）、禁用词、感叹号和 emoji、语气词只许「呢吧了」、「就是说/然后」、每段都有因果或转折词、第二个及之后的正文段首句必须承接上一层局限、每段 2-6 句。「原本只能靠人判断」的四项也被约束：脚本不判断对错，但要求**声明 + 核对声明与成稿一致 + 人逐项审过**。`--style-selfcheck` 是一个 JSON：`{layers:[{layer_id, limitation_sentence, limitation_type(适用范围|证据局限|反方质疑|成本代价), leads_to_sentence, evidence:[{type(亲历事实|具体数字|客户案例|机制因果链), sentence}]}], ending:{type(可操作建议|利落判断|用户指定修辞), sentence, message_id?, quote?}, waivers?:[{marker, reason}]}`。脚本核对：每个声明句在成稿对应层里逐字存在；论据类型与句子特征匹配；局限句含局限词、与下一层段首句有共同词；结尾声明就是成稿最后一句、不含升华词、不超 30 字（用户指定修辞须附该用户的消息 id 和原话）；成稿没有名言和类比标记、没有书面腔和括号、没有超过 40 字的意群。**机器项全过后仍不发校验码**，要人对 ◆ 各项逐项给「通过/不通过」，用 `--human-review`（`[{id, verdict, by, message_id, quote}]`，agent 不得自填）记录，才发码。 预检登记的每条约束要用 `--constraints-result` 逐条回写（`[{id, status: 已遵守|不适用, evidence}]`，证据是成稿里逐字存在的一句或 `check:<检查项id>`，未遵守不放行）。通过输出校验码，交付消息末尾必须带，并写明大纲版本号。**过程稿和成稿的交付形态（王诗梦 2026-11-16 定）：直接发在消息里，不建飞书文档；每段前标字母加括号说明，格式「A（开头）」「B（第一层：归因倒置）」「D（第二层：功能判据，大事·起因）」，括号里写这一段对应大纲哪一层、在这层里做什么；一层拆成多段时括号里写明。人按字母指出要改哪段。**
+6. **多轮定稿**：成稿发出后人按字母提修改意见，机侧只改被点到的段并重跑机器检查，如此多轮，直到人明确说「定稿」。不对人说「签收」二字，只问三件事：哪段不像你说的、哪段逻辑接不上、整体能不能进下一步。
+7. **人拍摄、机出物料**：定稿后由人按定稿稿拍摄；机侧以定稿稿（不是中间稿）为唯一输入，交给 va7-publish 写物料（标题备选、正文、Hashtag、章节），再由 va7-video-cover-maker 出封面和花字。物料与定稿稿对不上时以定稿稿为准。
+8. **入库**：物料也确认后同步灵感库（见下文「5. 定稿收尾」）。
+
+标 ◆ 的判断项脚本不判断，只在输出里列出，由人审。脚本只证明走过这些项，不证明写得对。
+
 ## 写稿前必读
 
-1. 用户的文风档案：`<用户目录>/writing-style-profile.md`（路径在 config.json 的 voice_profile.path，config 由 va7-onboarding 产出）。第八节"模仿要点"是硬规则，写完按它自检。
+1. 用户的文风档案：config.json 的 voice_profile.path 指向的 `writing-style-profile.md`（config 查找顺序见 va7-pipeline「Multi-User Config」：先 `VA7_USER_CONFIG`，再 `va7-pipeline/config/default.json`；`python3 ../va7-pipeline/scripts/va7config.py` 打印解析结果）；config 缺失或未配置 voice_profile.path 时，VA7 本人读 `va7-config/voice/va7.md`（2026-10-03 校准的原档，默认 config 已指向它）。两处都读不到就停下来说「缺文风档案」，不许用笔记或记忆替代。第八节"模仿要点"是硬规则，写完按它自检。
 2. 若用户目录下存在 `style-references/`（创作者本人的历史风格沉淀），写全文或整理口述时一并参考。
 
 ## 先确定当前产物
@@ -74,7 +92,7 @@ python3 ~/.claude/skills/va7-script/scripts/pre_draft_gate.py \
 
 ### 1. 交付可审核的论证大纲
 
-规格见 [references/speaking-outlines.md](references/speaking-outlines.md)。用具体判断和必要机制/案例支撑主线，不固定条数；同一轮请用户修改或确认，不要先写全文再倒提纲。
+规格见 [references/speaking-outlines.md](references/speaking-outlines.md)。大纲要存成 `outline.json` 登记并由人确认，之后才能写全文（见文件开头「强制流程」）。用具体判断和必要机制/案例支撑主线，不固定条数；同一轮请用户修改或确认，不要先写全文再倒提纲。
 
 ### 2. 按用户选择展开
 
@@ -88,6 +106,16 @@ python3 ~/.claude/skills/va7-script/scripts/pre_draft_gate.py \
 
 大纲检查主张能否被依据支持；完整稿再检查自然段、可念性和字数。事实与产品能力在录制前核对。
 
+### 5. 定稿收尾：同步灵感库（必做，不可跳过）
+
+用户确认某版为定稿（"以这个作为最终版""收尾"）时，写作阶段结束，但内容生产管线还有收尾动作，遗漏即为未完成交付。使用本用户 VA7_USER_CONFIG 指向的 Base（表 id 见 config.json），用 bot 身份一次写齐三张表并互相链接：
+
+1. **选题库**（topics 表）：无既有记录则新建——选题标题、选题角度（一段话 thesis）、人性钩子、口播终稿全文、潜力等级、认知密度、待做=False；已有记录则更新这些字段而不是重复新建。
+2. **内容生产排期**（schedules 表）：新建记录，链回选题库记录（link 字段），填稿子完成日、内容标题/视频标题、备注写当前制作状态（如"拍摄剪辑中，尚未发布"）。
+3. **成品内容**（finished 表）：新建记录，链回排期记录，状态 select 用"终稿"（已发布的才改"已发布"），口播稿全文完整存入。
+
+写完用 +record-get 回读选题库记录核对字段与链接；record_id 可附在给用户的消息里。字段名以 +field-list 实测为准，select 选项值不猜。
+
 ## 交付前硬检查
 
 输出完整稿或口播替换段前：将最终口播正文存临时文件 → `python3 ~/.claude/skills/va7-script/scripts/count_script_chars.py --file <临时文件>` → 在稿件后写 `字数：<total_chars> 字（脚本统计）`。禁止"约 X 字"，禁止模型自数，没有脚本统计结果不交付。
@@ -98,3 +126,26 @@ python3 ~/.claude/skills/va7-script/scripts/pre_draft_gate.py \
 - [references/hook-patterns.md](references/hook-patterns.md) — 开头写法
 - [references/writing-principles.md](references/writing-principles.md) — 通用写作原则
 - [references/research-protocols.md](references/research-protocols.md) — 三项研究协议
+
+## 约束与优先级（流程见文件开头「强制流程」）
+
+### 约束分类（核心原则的使用方式）
+
+- **[标准]** 能核对，由脚本或自检清单查：格式（原则 6）、字数、数字有来源、开头承诺的几点正文逐一回答、不用 bullet。
+- **[可降解]** 变成必须交出的证据件，证据齐不齐是标准，证据好不好是判断：立场句逐句标「VA7原话」或「推断」（原则 10）；多人转录交三份产物（原则 11）；每层写「上一层解决了什么、还缺什么、为什么需要这一层」（原则 3、8）；造词做删词测试并记录（原则 4）；开头交 3 个备选 hook（原则 1）。
+- **[判断] ◆** 留人审，脚本只在输出里列出，不假装判断：立场是否真是 VA7 的、递进是否真实、hook 张力是否打在观众身上、论点深度、入口例子是否绑定特定人群。
+
+对应环节：立场建立 → 原则 10、11；框架与大纲 → 原则 3、4、8；开头 → 原则 1、14；论证 → 原则 7；成稿 → 原则 6。
+
+### 冲突优先级（已定，不留给现场权衡）
+
+不编造和本次明确指令 > VA7 最近带日期的明确反馈 > 文风原档（config 的 voice_profile.path，VA7 为 `va7-config/voice/va7.md`） > `hook-patterns.md` / `writing-principles.md` 清单。
+- 开头：原档的三种开法保留为备选类型，不要求三句内完成；`writing-principles` 的「开头必须反共识」降为备选之一。
+- 篇幅（2026-11-16 王诗梦定）：常规 1800-2200 字；不常规的题材 1000 字或 3000 字都可能，由内容量决定，不是门槛，也不凑字数。区间外时用 `--length-note` 写一句原因即可（如「素材只有一个机制和两个例子，写透即止」）。原档里「600 字的短稿直接不合格」「不到 1800 字就继续展开」两条按此条覆盖。
+- 结尾：以原档为准，收在可操作建议或利落判断上，一句结束，不升华；台账里对仗金句收尾的是过去的稿子，不作依据。
+
+### 修辞与字面
+
+稿中的修辞（如「我先去搬家了」收尾）是语言艺术，不是待核实的事实；不要把它当成需要补证据的断言，也不要为它追问真假。
+
+读完标记：VA7-SCRIPT-READ-END-2026-11-16
